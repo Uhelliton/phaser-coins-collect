@@ -1,4 +1,4 @@
-import { Scene, Math } from 'phaser';
+import { Scene, Math as PhaserMath } from 'phaser';
 
 export class Game extends Scene
 {
@@ -10,25 +10,25 @@ export class Game extends Scene
   public player
   public cursor
   public coins
-  public stars
   score = 0;
   scoreText : Phaser.GameObjects.Text
+  public enemies
+  public gameOver = false
 
   constructor ()  {
     super('Game');
   }
 
   preload() {
-    this.load.image('background', 'assets/bg.png');
-    this.load.image('platform', 'assets/platform.png');
-    this.load.spritesheet('player', 'assets/dude.png', { frameWidth: 32, frameHeight: 48})
-    this.load.spritesheet('coin', 'assets/coin.png', { frameWidth: 36, frameHeight: 44 });
+
   }
 
   create() {
     this.cursor = this.input.keyboard?.createCursorKeys();
     this.add.sprite(400, 300, 'background')
     this.scoreText = this.add.text(16, 16, `SCORE ${this.score}`, { fontSize: '20px', fill: '#ffffff'})
+      .setShadow(0, 0, '#000', 3)
+      .setScrollFactor(0) // percent element if moving
 
     this.platforms = this.physics.add.staticGroup();
     this.platforms.create(600, 400, 'platform');
@@ -42,60 +42,63 @@ export class Game extends Scene
       allowGravity: false,
       immovable: true
     })
-    let movePlatform = this.movePlatforms.create(150, 475, 'platform').setScale(0.25, 1)
+    let movePlatform = this.movePlatforms.create(160, 440, 'platform').setScale(0.25, 1)
       movePlatform.speed = 2
       movePlatform.minX = 150
       movePlatform.maxX = 300
 
-      movePlatform = this.movePlatforms.create(500, 280, 'platform').setScale(0.25, 1)
-      movePlatform.speed = 1
-      movePlatform.minX = 500
-      movePlatform.maxX = 800
+      movePlatform = this.movePlatforms.create(500, 300, 'platform').setScale(0.25, 1)
+      movePlatform.speed = 1.5
+      movePlatform.minX = 340
+      movePlatform.maxX = 720
 
     this.coins = this.physics.add.group({
       key: 'coin',
       repeat: 14,
       setXY: {
         x: 12,
-        y: -50,
+        y: 10,
         stepX: 70
       }
     })
-    this.coins.createMultiple({max: 30})
+
+    this.coins.children.iterate((coin) => {
+      coin.setBounceY(PhaserMath.FloatBetween(.4, .8))
+      coin.anims.play('spin')
+    })
+
+    this.enemies = this.physics.add.group()
+    let enemy = this.enemies.create(PhaserMath.Between(50, 950), 0, 'enemy')
+      .setScale(.3)
+      .setBounce(1)
+      .setCollideWorldBounds(true)
+      .setVelocity(Math.random() < .5 ? -200 : 200, 50)
 
     this.player = this.physics.add.sprite(50, 50, 'player').setScale(1.2, 1.2)
     this.player.body.gravity.y = 300
     this.player.setCollideWorldBounds(true)
     this.player.setBounce(0.2) // kick play after coline platform
-
-    this.anims.create({
-      key: 'left',
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
-      frameRate: 10, // velocidade
-      repeat: -1 // loop repeat
-    })
-    this.anims.create({
-      key: 'right',
-      frames: this.anims.generateFrameNumbers('player', { start: 5, end: 8 }),
-      frameRate: 10, // velocidade
-      repeat: -1 // loop repeat
-    })
-    this.anims.create({
-      key: 'turn',
-      frames: [ { key: 'player', frame: 4 } ],
-      frameRate: 20
-    });
+    this.player.setSize(32, 46)
 
     this.physics.add.collider(this.player, this.platforms)
     this.physics.add.collider(this.player, this.movePlatforms, this.platformMovingThins)
+
     this.physics.add.collider(this.coins, this.platforms)
     this.physics.add.collider(this.coins, this.movePlatforms)
+
+    this.physics.add.collider(this.player, this.enemies, this.enemyHit, null, this)
+    this.physics.add.collider(this.enemies, this.platforms)
+    this.physics.add.collider(this.enemies, this.movePlatforms)
+
+    this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this)
 
     this.physics.world.setBounds(0, 0, 900, 600)
     this.cameras.main.startFollow(this.player).setBounds(0, 0, 900, 600)
   }
 
   update(time: number, delta: number) {
+    if (this.gameOver) return
+
     this.player.setVelocityX(0)
     if (this.cursor.left.isDown) {
       this.player.setVelocityX(-150)
@@ -125,5 +128,22 @@ export class Game extends Scene
 
   protected platformMovingThins(sprite, platform) {
     sprite.x += platform.speed
+  }
+
+  protected collectCoin(player, coin) {
+    coin.destroy()
+    this.score += 10;
+    this.setScore()
+  }
+
+  protected setScore() {
+    this.scoreText.setText(`SCORE ${this.score}`)
+  }
+
+  protected enemyHit(player, enemy) {
+    this.physics.pause()
+    player.setTint(0xff0000)
+    player.anims.stop()
+    this.gameOver = true
   }
 }

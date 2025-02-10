@@ -1,4 +1,5 @@
 import { Boot } from './scenes/Boot';
+import { MainMenu } from './scenes/MainMenu';
 import { Game as MainGame } from './scenes/Game';
 
 import { Game, Types } from "phaser";
@@ -13,12 +14,14 @@ const config: Types.Core.GameConfig = {
     physics: {
       default: 'arcade',
       arcade: {
+        gravity: { y: 150 },
         debug: false
       }
     },
     pixelArt: true, // usar images mais nitidas
     scene: [
         Boot,
+        MainMenu,
         MainGame,
     ]
 };
