@@ -1,6 +1,6 @@
 import { Scene, Math as PhaserMath } from 'phaser';
 
-export class Game extends Scene
+export class Scene2 extends Scene
 {
   // camera: Phaser.Cameras.Scene2D.Camera;
   // background: Phaser.GameObjects.Image;
@@ -20,11 +20,11 @@ export class Game extends Scene
   public audioGetCoin
 
   constructor ()  {
-    super('Game');
+    super('Scene2');
   }
 
-  preload() {
-
+  init(data) {
+    this.score = data.score
   }
 
   create() {
@@ -37,7 +37,8 @@ export class Game extends Scene
     this.audioGetCoin = this.sound.add('audioGetCoin')
 
     this.cursor = this.input.keyboard?.createCursorKeys();
-    this.add.sprite(400, 300, 'background')
+    let bg = this.add.sprite(400, 300, 'background')
+    bg.alpha = 0.9
     this.scoreText = this.add.text(16, 16, `SCORE ${this.score}`, { fontSize: '20px', fill: '#ffffff'})
       .setShadow(0, 0, '#000', 3)
       .setScrollFactor(0) // percent element if moving
@@ -66,7 +67,7 @@ export class Game extends Scene
 
     this.coins = this.physics.add.group({
       key: 'coin',
-      repeat: 4,
+      repeat: 14,
       setXY: {
         x: 12,
         y: 10,
@@ -151,7 +152,7 @@ export class Game extends Scene
 
     if (this.coins.countActive() <= 0) {
        this.audioBg.stop()
-       this.scene.start('Scene2', { score: this.score})
+       this.scene.start('Scene2')
     }
   }
 
